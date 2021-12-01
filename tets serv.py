@@ -1,53 +1,50 @@
-import socket, threading
+import socket
+import threading
 
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+PORT = 2221
+ADDRESS = "0.0.0.0"
+clients = []
+server.bind((ADDRESS, PORT))
+print("server start")
 
-class Server():
-    def __init__(self):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        PORT = 1010
-        ADDRESS = "0.0.0.0"
-        self.clients = []
-        self.server.bind((ADDRESS, PORT))
-        self.message = ''
-        print("server start")
-
-    def accept(self):
-        while True:
-            self.server.listen()
-            self.client, self.address = self.server.accept()
-            self.clients.append(self.address)
-            start_listenning_thread(self.client)
+def accept():
+    while True:
+        server.listen()
+        client, address = server.accept()
+        clients.append(client)
+        start_listenning_thread(client, address)
 
 
 
-    def start_listenning_thread(self, client):
-        client_thread = threading.Thread(
-            target=listen_thread,
-            args=(client,)  # the list of argument for the function
-        )
-        client_thread.start()
+def start_listenning_thread(client, address):
+    client_thread = threading.Thread(
+        target=listen_thread,
+        args=(client, address,)  # the list of argument for the function
+    )
+    client_thread.start()
 
 
-    def listen_thread(self):
-        while True:
-            self.message = self.client.recv(1024).decode()
-            if self.message:
-                print(f"Received message : {self.message}")
-                self.broadcast(self.message)
-            else:
-                print(f"client has been disconnected : {self.client}")
-                self.clients.remove(self.client)
-                return
+def listen_thread(client, address):
+    while True:
+        message = client.recv(1024).decode()
+        selector = client.recv(2048).decode()
+        if message:
+            print(f"Received message : {message}")
+            broadcast(message, address, selector)
+        else:
+            print(f"client has been disconnected : {client}")
+            clients.remove(client)
+            return
 
 
-    def broadcast(self):
-        if self.message[1] == '2':
-            self.client.sendto(self.message.encode(), )
-            # elif message[1] == '1':
-            #     self.client.send(message.encode())
-
+def broadcast(message, address, selector):
+    if selector == "first":
+        clients[0].send(message.encode())
+    elif selector == "second":
+        clients[1].send(message.encode())
 
 
 
 
-    accept()
+accept()
